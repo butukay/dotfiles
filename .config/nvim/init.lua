@@ -8,22 +8,22 @@
 -- Github: https://github.com/butukay/dotfiles
 
 require("packer").startup(function(use)
-	use "wbthomason/packer.nvim"
+	use { "wbthomason/packer.nvim" }
 
-	-- appearence
-	use 'folke/tokyonight.nvim'
+	-- appearance
+	use { 'folke/tokyonight.nvim' }
 
-	-- use "ryanoasis/vim-devicons"
-	use 'kyazdani42/nvim-web-devicons'
+	use { 'kyazdani42/nvim-web-devicons' }
 
 	-- gui modules
-	use {'romgrk/barbar.nvim', wants = 'nvim-web-devicons'}
-	use 'kyazdani42/nvim-tree.lua'
-	use {'nvim-lualine/lualine.nvim', config = function() require('lualine').setup({ options = { theme = 'tokyonight' } }) end}
+	use { 'romgrk/barbar.nvim' }
+	use { 'kyazdani42/nvim-tree.lua' }
+	use { 'nvim-lualine/lualine.nvim', config = function() require('lualine').setup() end }
 
 	-- helpers
 	use { "terrortylor/nvim-comment", config = function() require('nvim_comment').setup() end }  -- comment many lines
-	use "ntpeters/vim-better-whitespace" -- strip whitespaces
+    use { "brenoprata10/nvim-highlight-colors", config = function() require('nvim-highlight-colors').setup() end } -- highlight colors
+    use { "ntpeters/vim-better-whitespace" } -- strip whitespaces
 
     -- trouble
 	use { "folke/trouble.nvim", requires = "nvim-tree/nvim-web-devicons", config = function() require("trouble").setup() end }
@@ -38,7 +38,7 @@ require("packer").startup(function(use)
 	use { 'nvim-treesitter/nvim-treesitter-textobjects', after = 'nvim-treesitter' }
 
 	-- completion
-	use {'hrsh7th/nvim-cmp', requires = { 'hrsh7th/cmp-nvim-lsp', 'L3MON4D3/LuaSnip', 'saadparwaiz1/cmp_luasnip' } }
+	use { 'hrsh7th/nvim-cmp', requires = { 'hrsh7th/cmp-nvim-lsp', 'L3MON4D3/LuaSnip', 'saadparwaiz1/cmp_luasnip' } }
 
 	-- LSP
 	use { 'neovim/nvim-lspconfig',
@@ -56,10 +56,10 @@ require("packer").startup(function(use)
 	}
 
 	-- Github Copilot
-	use {'github/copilot.vim'}
+	use { 'github/copilot.vim' }
 
     -- Discord RPC
-    use {'andweeb/presence.nvim', config = function() require('presence').setup() end}
+    use { 'andweeb/presence.nvim', config = function() require('presence').setup() end }
 end)
 
 vim.cmd[[colorscheme tokyonight-moon]]

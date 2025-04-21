@@ -13,11 +13,11 @@ require("packer").startup(function(use)
 	-- appearance
 	use { 'folke/tokyonight.nvim' }
 
-	use { 'kyazdani42/nvim-web-devicons' }
+	use { 'nvim-tree/nvim-web-devicons' }
 
 	-- gui modules
 	use { 'romgrk/barbar.nvim' }
-	use { 'kyazdani42/nvim-tree.lua' }
+	use { 'nvim-tree/nvim-tree.lua' }
 	use { 'nvim-lualine/lualine.nvim', config = function() require('lualine').setup() end }
 
 	-- helpers
@@ -36,9 +36,11 @@ require("packer").startup(function(use)
 	-- highlight
 	use { 'nvim-treesitter/nvim-treesitter', run = function() pcall(require('nvim-treesitter.install').update{ with_sync = true }) end }
 	use { 'nvim-treesitter/nvim-treesitter-textobjects', after = 'nvim-treesitter' }
+    use { 'nvim-treesitter/playground', after = 'nvim-treesitter' }
 
 	-- completion
-	use { 'hrsh7th/nvim-cmp', requires = { 'hrsh7th/cmp-nvim-lsp', 'L3MON4D3/LuaSnip', 'saadparwaiz1/cmp_luasnip' } }
+	use { 'hrsh7th/nvim-cmp', requires = { 'hrsh7th/cmp-nvim-lsp', 'saadparwaiz1/cmp_luasnip' } }
+    use { "L3MON4D3/LuaSnip", run = "make install_jsregexp" }
 
 	-- LSP
 	use { 'neovim/nvim-lspconfig',
@@ -55,11 +57,16 @@ require("packer").startup(function(use)
 		},
 	}
 
+    use { 'nvimdev/lspsaga.nvim', after = 'nvim-lspconfig', config = function() require('lspsaga').setup({ code_action_prompt = { enable = false, } }) end } -- LSP UI
+
 	-- Github Copilot
 	use { 'github/copilot.vim' }
 
     -- Discord RPC
     use { 'andweeb/presence.nvim', config = function() require('presence').setup() end }
+
+    use { 'tikhomirov/vim-glsl' }
+    use { 'timtro/glslView-nvim', ft = 'glsl', config = function() require('glslView').setup({ exe_path = '/opt/homebrew/bin/glslViewer' }) end }
 end)
 
 vim.cmd[[colorscheme tokyonight-moon]]
@@ -81,14 +88,18 @@ vim.o.updatetime = 100
 vim.o.splitbelow = true
 vim.o.splitright = true
 
-vim.o.mouse = a
+vim.o.mouse = ""
 
-vim.o.spelllang = "en_us,ru_ru"
-vim.o.spell = true
+-- vim.o.spelllang = "en_us,ru_ru"
+-- vim.o.spell = true
 
-vim.o.foldmethod='marker'
+vim.o.foldmethod = 'marker'
 vim.o.foldenable = true
 vim.o.foldnestmax = 1
+
+vim.g.loaded_ruby_provider = 0
+vim.g.loaded_perl_provider = 0
+vim.g.python3_host_prog = '/opt/homebrew/opt/python@3.11/libexec/bin/python3'
 
 -- keybindings {{{1
 vim.g.mapleader = " "
@@ -119,7 +130,7 @@ vim.keymap.set('n', '<Leader>-', ":split<CR>", keymap_opts)
 vim.keymap.set('n', '<Leader>|', ":vsplit<CR>", keymap_opts)
 
 vim.keymap.set('n', '<Space>,', '<Cmd>BufferPrevious<CR>', keymap_opts)
-vim.keymap.set('n', '<Space>.', '<Cmd>BufferNext<CR>', keymap_optts)
+vim.keymap.set('n', '<Space>.', '<Cmd>BufferNext<CR>', keymap_opts)
 vim.keymap.set('n', '<Space><', '<Cmd>BufferMovePrevious<CR>', keymap_opts)
 vim.keymap.set('n', '<Space>>', '<Cmd>BufferMoveNext<CR>', keymap_opts)
 vim.keymap.set('n', '<Space>1', '<Cmd>BufferGoto 1<CR>', keymap_opts)
@@ -137,23 +148,42 @@ vim.keymap.set('n', '<Space>c', '<Cmd>BufferClose<CR>', keymap_opts)
 vim.keymap.set('n', '<Space>bb', '<Cmd>BufferOrderByBufferNumber<CR>', keymap_opts)
 vim.keymap.set('n', '<Space>bd', '<Cmd>BufferOrderByDirectory<CR>', keymap_opts)
 vim.keymap.set('n', '<Space>bl', '<Cmd>BufferOrderByLanguage<CR>', keymap_opts)
-vim.keymap.set('n', '<Space>bw', '<Cmd>BufferOrderByWindowNumber<CR>', keymaps_opts)
+vim.keymap.set('n', '<Space>bw', '<Cmd>BufferOrderByWindowNumber<CR>', keymap_opts)
 
 -- }}}1
 
 -- nvim-tree {{{1
-require("nvim-tree").setup{
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+
+require('nvim-web-devicons').setup({
+    default = true,
+    strict = true,
+    override_by_extension = {
+        ["env"] = {
+            icon = "",
+            color = "#ff8800",
+            name = "EnvOther"
+        }
+    },
+})
+
+require("nvim-tree").setup({
+    sort_by = "extension",
 	filters = {
     	dotfiles = false,
     	custom = {".DS_Store", ".git\\>", "__pycache__"},
 		exclude = {"[^v]env", "data/*"}
 	}
-}
+})
 
 -- }}}1
 
 -- lsp configs {{{1
 require("mason").setup()
+require("mason-lspconfig").setup({
+    ensure_installed = {"pyright", "clangd", "rust_analyzer", "tailwindcss", "lua_ls", "vimls", "ts_ls", "jdtls"},
+})
 
 local lsp_flags = {
   debounce_text_changes = 150,
@@ -166,8 +196,8 @@ local on_attach = function(client, bufnr)
 
   vim.keymap.set('n', 'K', vim.lsp.buf.hover, bufopts)
 
-  vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, bufopts)
   vim.keymap.set('n', 'gd', vim.lsp.buf.definition, bufopts)
+  vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, bufopts)
   vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, bufopts)
   vim.keymap.set('n', 'gr', vim.lsp.buf.references, bufopts)
   vim.keymap.set('n', 'gt', vim.lsp.buf.type_definition, bufopts)
@@ -175,12 +205,80 @@ local on_attach = function(client, bufnr)
   vim.keymap.set('n', '<space>rn', vim.lsp.buf.rename, bufopts)
   vim.keymap.set('n', '<space>ca', vim.lsp.buf.code_action, bufopts)
 
-  -- vim.keymap.set('n', '<space>f', vim.lsp.buf.formatting, bufopts)
+  vim.keymap.set('n', '<space>gk', vim.lsp.buf.format, bufopts)
+  vim.keymap.set('n', '<space>gl', vim.diagnostic.open_float, bufopts)
+
 end
 
+local border = "rounded"
+
+local orig_util_open_floating_preview = vim.lsp.util.open_floating_preview
+function vim.lsp.util.open_floating_preview(contents, syntax, opts, ...)
+  opts = opts or {}
+  opts.border = opts.border or border
+
+  if not opts.prefix and not opts.suffix then
+    local prefix = " "
+    local suffix = " "
+
+    contents = vim.tbl_map(function(line)
+      return prefix .. line .. suffix
+    end, contents)
+  end
+
+  return orig_util_open_floating_preview(contents, syntax, opts, ...)
+end
+
+vim.diagnostic.config{
+    virtual_text={
+        prefix = '●',
+    },
+    float = {
+        source = 'if_many',
+        header = '',
+        prefix = ' ',
+        suffix = ' ',
+    },
+}
+
 require('lspconfig')['pyright'      ].setup{on_attach = on_attach, flags = lsp_flags}
-require('lspconfig')['clangd'       ].setup{on_attach = on_attach, flags = lsp_flags}
+require('lspconfig')['clangd'       ].setup{on_attach = on_attach, flags = lsp_flags, cmd = {"clangd", "--offset-encoding=utf-16"} }
 require('lspconfig')['rust_analyzer'].setup{on_attach = on_attach, flags = lsp_flags}
+require('lspconfig')['tailwindcss'  ].setup{on_attach = on_attach, flags = lsp_flags}
+require('lspconfig')['lua_ls'       ].setup{on_attach = on_attach, flags = lsp_flags,
+  on_init = function(client)
+    local path = client.workspace_folders[1].name
+    if vim.loop.fs_stat(path .. '/.luarc.json') or vim.loop.fs_stat(path .. '/.luarc.jsonc') then
+      return
+    end
+
+    client.config.settings.Lua = vim.tbl_deep_extend('force', client.config.settings.Lua, {
+      runtime = { version = 'LuaJIT' },
+      workspace = {
+        checkThirdParty = false,
+        library = {
+          vim.env.VIMRUNTIME
+        }
+      }
+    })
+  end,
+  settings = {
+    Lua = {}
+  }
+}
+
+require('lspconfig')['vimls'        ].setup{on_attach = on_attach, flags = lsp_flags}
+require('lspconfig')['ts_ls'        ].setup{on_attach = on_attach, flags = lsp_flags}
+require('lspconfig')['jdtls'        ].setup{on_attach = on_attach, flags = lsp_flags,
+    root_dir = require('lspconfig').util.root_pattern(
+        "build.gradle",
+        "settings.gradle",
+        "settings.gradle.kts",
+        "pom.xml", -- Maven
+        "build.xml", -- Ant
+        ".git"
+    ) or vim.fn.getcwd(),
+}
 
 -- }}}1
 
@@ -225,7 +323,7 @@ end, { desc = '[/] Fuzzily search in current buffer]' })
 
 -- treesitter {{{1
 require('nvim-treesitter.configs').setup {
-  ensure_installed = { 'c', 'cpp', 'python', 'rust', 'lua', 'javascript', 'typescript', 'vim', 'help' },
+  ensure_installed = { 'c', 'cpp', 'python', 'rust', 'lua', 'javascript', 'typescript', 'vim'},
 
   highlight = { enable = true },
   indent = { enable = true }, -- disable = { 'python' }
@@ -339,6 +437,5 @@ cmp.setup {
 vim.g.copilot_no_tab_map = true
 vim.g.copilot_assume_mapped = true
 vim.g.copilot_tab_fallback = ""
-
 -- }}}1
 
